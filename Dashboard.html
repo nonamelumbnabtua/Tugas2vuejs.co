@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOME | PBA UT Medan</title>
+
+    <!-- Link Style CSS -->
+    <link rel="stylesheet" href="styledashboard.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo"><a href="#">PBA <span>UT Medan</span></a></div>
+
+            <ul class="links">
+                <li><a href="#Stok">Stok</a></li>
+                <li><a href="#Tracking">Tracking</a></li>
+                <li><a href="#ContactUs">Contact Us</a></li>
+            </ul>
+
+            <a href="https://myut.ut.ac.id/auth/login" class="action-btn">MyUt</a>
+
+            <div class="toggle_btn" aria-label="Buka menu" role="button" tabindex="0">
+                <i class="ri-menu-line"></i>
+            </div>
+        </div>
+
+        <!-- Dropdown menu -->
+        <div class="dropdown-menu">
+            <ul>
+                <li><a href="#Stok">Stok</a></li>
+                <li><a href="#Tracking">Tracking</a></li>
+                <li><a href="#ContactUs">Contact Us</a></li>
+                <li><a href="https://myut.ut.ac.id/auth/login" class="action-btn">MyUT</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Konten utama -->
+    <main class="hero" id="Home">
+      <div class="hero-kiri">
+        <h1>Selamat datang, <span id="namaUser">Pengguna</span></h1>
+        <p class="deskripsi">
+            Portal Bahan Ajar UT Medan menyediakan informasi bahan ajar dan stok
+            untuk mendukung kegiatan perkuliahan Anda. Gunakan kolom pencarian di bawah
+            untuk menemukan bahan ajar berdasarkan kode atau nama.
+        </p>
+
+        <!-- Kolom pencarian -->
+        <div class="search-box" id="Stok">
+            <input type="text" id="inputCari" placeholder="Cari bahan ajar (kode atau nama)...">
+            <button id="btnCari"><i class="ri-search-line"></i> Cari</button>
+        </div>
+      </div>
+
+      <!-- Daftar BMP (muncul di kanan saat dicari) -->
+      <div class="hero-kanan">
+        <div id="hasilCari" class="hasil"></div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <span>(Tugas 1 MSIM4309 Pemrograman Berbasis Web)</span>
+        <div class="ri-copyright-line">
+            <span>Copyright 2026</span>
+        </div>
+    </footer>
+
+    <!-- Data & Script -->
+    <script src="data.js"></script>
+    <script>
+        // Ambil data user yang login dari index.html (disimpan di script.js)
+        const user = JSON.parse(sessionStorage.getItem("userLogin"));
+        if (!user) {
+            alert("Silakan login terlebih dahulu.");
+            window.location.href = "index.html";
+        } else {
+            document.getElementById("namaUser").textContent = user.nama;
+        }
+
+        // Pencarian bahan ajar dari data.js
+        const inputCari = document.getElementById("inputCari");
+        const hasilCari = document.getElementById("hasilCari");
+
+        function cariBahanAjar() {
+            const kata = inputCari.value.trim().toLowerCase();
+            hasilCari.innerHTML = "";
+            if (kata === "") return;
+
+            const hasil = dataBahanAjar.filter(function (b) {
+                return b.namaBarang.toLowerCase().includes(kata) ||
+                       b.kodeBarang.toLowerCase().includes(kata);
+            });
+
+            if (hasil.length === 0) {
+                hasilCari.innerHTML = '<p class="kosong">Bahan ajar tidak ditemukan.</p>';
+                return;
+            }
+
+            hasil.forEach(function (b) {
+                hasilCari.innerHTML +=
+                    '<div class="item">' +
+                        '<img src="' + b.cover + '" alt="Cover ' + b.namaBarang + '">' +
+                        '<div class="info">' +
+                            '<h3>' + b.namaBarang + '</h3>' +
+                            '<p>Kode: ' + b.kodeBarang + '</p>' +
+                            '<p>Jenis: ' + b.jenisBarang + ' | Edisi: ' + b.edisi + '</p>' +
+                        '</div>' +
+                    '</div>';
+            });
+        }
+
+        document.getElementById("btnCari").addEventListener("click", cariBahanAjar);
+        inputCari.addEventListener("input", cariBahanAjar);
+    </script>
+
+    <!-- Script menu -->
+     <script>
+     const toggleBtn = document.querySelector('.toggle_btn')
+const toggleBtnIcon = document.querySelector('.toggle_btn i')
+const dropDownMenu = document.querySelector('.dropdown-menu')
+
+function toggleMenu() {
+  dropDownMenu.classList.toggle('open')
+  const isOpen = dropDownMenu.classList.contains('open')
+
+  toggleBtn.classList.toggle('active', isOpen)
+  toggleBtnIcon.className = isOpen ? 'ri-close-line' : 'ri-menu-line'
+}
+
+toggleBtn.addEventListener('click', toggleMenu)
+
+// Bisa dibuka lewat keyboard (Enter / Spasi)
+toggleBtn.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    toggleMenu()
+  }
+})
+
+// Tutup menu saat salah satu link diklik
+dropDownMenu.querySelectorAll('a').forEach(function (link) {
+  link.addEventListener('click', function () {
+    dropDownMenu.classList.remove('open')
+    toggleBtn.classList.remove('active')
+    toggleBtnIcon.className = 'ri-menu-line'
+  })
+})
+     </script>
+</body>
+</html>
+
+<img src="img/img/" alt="">
