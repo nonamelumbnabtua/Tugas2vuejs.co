@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STOK | PBA UT Medan</title>
+
+    <!-- Style (navbar & footer dari styledashboard.css, gaya halaman stok ada di <style> di bawah) -->
+    <link rel="stylesheet" href="styledashboard.css">
+    <link rel="stylesheet" href="Stokstyle.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo"><a href="Dashboard.html">PBA <span>UT Medan</span></a></div>
+
+            <ul class="links">
+                <li class="active"><a href="stok.html">Stok</a></li>
+                <li><a href="#Tracking">Tracking</a></li>
+                <li><a href="#ContactUs">Contact Us</a></li>
+            </ul>
+
+            <a href="https://myut.ut.ac.id/auth/login" class="action-btn">MyUt</a>
+
+            <div class="toggle_btn" aria-label="Buka menu" role="button" tabindex="0">
+                <i class="ri-menu-line"></i>
+            </div>
+        </div>
+
+        <!-- Dropdown menu -->
+        <div class="dropdown-menu">
+            <ul>
+                <li class="active"><a href="stok.html">Stok</a></li>
+                <li><a href="#Tracking">Tracking</a></li>
+                <li><a href="#ContactUs">Contact Us</a></li>
+                <li><a href="https://myut.ut.ac.id/auth/login" class="action-btn">MyUT</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Konten utama: search di tengah atas, daftar BMP di bawahnya -->
+    <main class="stok">
+        <div class="search-box">
+            <input type="text" id="inputCari" placeholder="Cari bahan ajar (kode atau nama)...">
+            <button id="btnCari"><i class="ri-search-line"></i> Cari</button>
+        </div>
+
+        <div id="daftarBMP" class="grid-bmp"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <span>(Tugas 1 MSIM4309 Pemrograman Berbasis Web)</span>
+        <div class="ri-copyright-line">
+            <span>Copyright 2026</span>
+        </div>
+    </footer>
+
+    <!-- Script -->
+    <script src="data.js"></script>
+    <script src="Stok.js"></script>
+</body>
+</html>
