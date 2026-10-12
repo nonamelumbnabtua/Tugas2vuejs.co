@@ -6,7 +6,7 @@
     <title>HOME | PBA UT Medan</title>
 
     <!-- Link Style CSS -->
-    <link rel="stylesheet" href="styledashboard.css">
+    <link rel="stylesheet" href="CSS/Gabungan.css">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet">
 </head>
 <body>
@@ -16,7 +16,7 @@
 
             <ul class="links">
                 <li><a href="Stok.html">Stok</a></li>
-                <li><a href="#Tracking">Tracking</a></li>
+                <li><a href="Tracking.html">Tracking</a></li>
                 <li><a href="#ContactUs">Contact Us</a></li>
             </ul>
 
@@ -31,7 +31,7 @@
         <div class="dropdown-menu">
             <ul>
                 <li><a href="Stok.html">Stok</a></li>
-                <li><a href="#Tracking">Tracking</a></li>
+                <li><a href="Tracking.html">Tracking</a></li>
                 <li><a href="#ContactUs">Contact Us</a></li>
                 <li><a href="https://myut.ut.ac.id/auth/login" class="action-btn">MyUT</a></li>
             </ul>
@@ -70,86 +70,7 @@
     </footer>
 
     <!-- Data & Script -->
-    <script src="data.js"></script>
-    <script>
-        // Ambil data user yang login dari index.html (disimpan di script.js)
-        const user = JSON.parse(sessionStorage.getItem("userLogin"));
-        if (!user) {
-            alert("Silakan login terlebih dahulu.");
-            window.location.href = "index.html";
-        } else {
-            document.getElementById("namaUser").textContent = user.nama;
-        }
-
-        // Pencarian bahan ajar dari data.js
-        const inputCari = document.getElementById("inputCari");
-        const hasilCari = document.getElementById("hasilCari");
-
-        function cariBahanAjar() {
-            const kata = inputCari.value.trim().toLowerCase();
-            hasilCari.innerHTML = "";
-            if (kata === "") return;
-
-            const hasil = dataBahanAjar.filter(function (b) {
-                return b.namaBarang.toLowerCase().includes(kata) ||
-                       b.kodeBarang.toLowerCase().includes(kata);
-            });
-
-            if (hasil.length === 0) {
-                hasilCari.innerHTML = '<p class="kosong">Bahan ajar tidak ditemukan.</p>';
-                return;
-            }
-
-            hasil.forEach(function (b) {
-                hasilCari.innerHTML +=
-                    '<div class="item">' +
-                        '<img src="' + b.cover + '" alt="Cover ' + b.namaBarang + '">' +
-                        '<div class="info">' +
-                            '<h3>' + b.namaBarang + '</h3>' +
-                            '<p>Kode: ' + b.kodeBarang + '</p>' +
-                            '<p>Jenis: ' + b.jenisBarang + ' | Edisi: ' + b.edisi + '</p>' +
-                        '</div>' +
-                    '</div>';
-            });
-        }
-
-        document.getElementById("btnCari").addEventListener("click", cariBahanAjar);
-        inputCari.addEventListener("input", cariBahanAjar);
-    </script>
-
-    <!-- Script menu -->
-     <script>
-     const toggleBtn = document.querySelector('.toggle_btn')
-const toggleBtnIcon = document.querySelector('.toggle_btn i')
-const dropDownMenu = document.querySelector('.dropdown-menu')
-
-function toggleMenu() {
-  dropDownMenu.classList.toggle('open')
-  const isOpen = dropDownMenu.classList.contains('open')
-
-  toggleBtn.classList.toggle('active', isOpen)
-  toggleBtnIcon.className = isOpen ? 'ri-close-line' : 'ri-menu-line'
-}
-
-toggleBtn.addEventListener('click', toggleMenu)
-
-// Bisa dibuka lewat keyboard (Enter / Spasi)
-toggleBtn.addEventListener('keydown', function (e) {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault()
-    toggleMenu()
-  }
-})
-
-// Tutup menu saat salah satu link diklik
-dropDownMenu.querySelectorAll('a').forEach(function (link) {
-  link.addEventListener('click', function () {
-    dropDownMenu.classList.remove('open')
-    toggleBtn.classList.remove('active')
-    toggleBtnIcon.className = 'ri-menu-line'
-  })
-})
-     </script>
+    <script src="Javascript/data.js"></script>
+    <script src="Javascript/Gabungan.js"></script>
 </body>
 </html>
-

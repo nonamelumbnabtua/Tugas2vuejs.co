@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRACKING | PBA UT Medan</title>
+
+    <!-- Style (semua gaya ada di gabungan.css) -->
+    <link rel="stylesheet" href="CSS/Gabungan.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo"><a href="Dashboard.html">PBA <span>UT Medan</span></a></div>
+
+            <ul class="links">
+                <li><a href="Stok.html">Stok</a></li>
+                <li class="active"><a href="Tracking.html">Tracking</a></li>
+                <li><a href="#ContactUs">Contact Us</a></li>
+            </ul>
+
+            <a href="https://myut.ut.ac.id/auth/login" class="action-btn">MyUt</a>
+
+            <div class="toggle_btn" aria-label="Buka menu" role="button" tabindex="0">
+                <i class="ri-menu-line"></i>
+            </div>
+        </div>
+
+        <!-- Dropdown menu -->
+        <div class="dropdown-menu">
+            <ul>
+                <li><a href="Stok.html">Stok</a></li>
+                <li class="active"><a href="Tracking.html">Tracking</a></li>
+                <li><a href="#ContactUs">Contact Us</a></li>
+                <li><a href="https://myut.ut.ac.id/auth/login" class="action-btn">MyUT</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Konten utama: kolom pencarian kode tracking, hasil di bawahnya -->
+    <main class="tracking awal" id="mainTracking">
+        <div class="search-box">
+            <input type="text" id="inputTracking" placeholder="Masukkan kode tracking / nomor DO...">
+            <button id="btnLacak"><i class="ri-search-line"></i> Lacak</button>
+        </div>
+
+        <div id="hasilTracking" class="hasil-tracking">
+            <p class="petunjuk">Masukkan kode tracking (nomor DO) lalu tekan Lacak untuk melihat posisi pengiriman. Contoh: 2023001234</p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <span>(Tugas 1 MSIM4309 Pemrograman Berbasis Web)</span>
+        <div class="ri-copyright-line">
+            <span>Copyright 2026</span>
+        </div>
+    </footer>
+
+    <!-- Script -->
+    <script src="Javascript/data.js"></script>
+    <script src="Javascript/Gabungan.js"></script>
+</body>
+</html>
