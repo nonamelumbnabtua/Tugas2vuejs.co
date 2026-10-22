@@ -1,3 +1,142 @@
+/* #####################################################################
+   GABUNGAN.JS  -  SEMUA JAVASCRIPT DALAM SATU FILE
+   Gabungan dari: Gabungan.js + daftar.js + stok-app.js + tracking-app.js
+
+   DAFTAR BAGIAN (cari penandanya dengan "BAGIAN 0", "BAGIAN 1", dst.)
+     BAGIAN 0 : AKSES ADMIN SITTA -> akun admin, penjaga halaman, menu admin
+     BAGIAN 1 : INTI SITUS    (Gabungan.js)   -> login, menu, cek login,
+                                                 Dashboard, Stok, Tracking
+                (di dalamnya masih ada penomoran 1-7 bawaan file aslinya)
+     BAGIAN 2 : BUAT AKUN     (daftar.js)     -> Daftar.html
+     BAGIAN 3 : STOK SITTA    (Vue.js)        -> StokAdmin.html     (KHUSUS ADMIN)
+     BAGIAN 4 : TRACKING SITTA(Vue.js)        -> TrackingAdmin.html (KHUSUS ADMIN)
+
+   URUTAN MEMUAT <script> DI HTML:
+     index / Daftar        : data.js, data2.js, Gabungan.js
+     Dashboard/Stok/Tracking: data.js, Gabungan.js
+     StokAdmin/TrackingAdmin: Vue (CDN), dataBahanAjar.js, Gabungan.js
+
+   CATATAN: setiap bagian hanya berjalan jika elemen halamannya ada.
+   BAGIAN 3 dan 4 hanya jalan untuk akun dengan peran "Administrator" (data.js);
+   akun lain otomatis dikembalikan ke Dashboard.
+   (Pembatasan ini ada di sisi browser, cukup untuk tugas/demo, tetapi
+   bukan keamanan sungguhan. Untuk itu perlu server/backend.)
+   ##################################################################### */
+
+/* #####################################################################
+   #####################################################################
+   BAGIAN 0: AKSES ADMIN SITTA
+   Sumber: (baru)
+   Dipakai oleh login, menu navbar, dan halaman admin
+   #####################################################################
+   ##################################################################### */
+
+/* Akun admin bawaan. Akun ini TIDAK bisa dibuat lewat Daftar.html
+   (pilihan peran di form daftar tidak memuat "Administrator"). */
+var ROLE_ADMIN = "Administrator";   // peran di data.js (akun admin@ut.ac.id)
+
+// Akun admin sekarang diambil dari data.js (dataPengguna), bukan ditulis di sini lagi
+var AKUN_ADMIN = [];
+
+// Akun yang boleh membuka StokAdmin.html & TrackingAdmin.html:
+// Siti Marlina (Puslaba), Doni Setiawan (Fakultas), Admin SITTA (Administrator)
+var EMAIL_AKSES_SITTA = [
+    "siti@ut.ac.id",
+    "doni@ut.ac.id",
+    "admin@ut.ac.id"
+];
+
+// Apakah user ini Admin SITTA?
+function adalahAdmin(user) {
+    if (!user) return false;
+    var email = String(user.email || "").trim().toLowerCase();
+    var role = String(user.role || "").trim().toLowerCase();
+    // Akses ditentukan lewat daftar email (bukan peran), supaya akun baru dari
+    // form Daftar dengan peran Puslaba/Fakultas tidak otomatis jadi admin.
+    return role === ROLE_ADMIN.toLowerCase() || EMAIL_AKSES_SITTA.indexOf(email) !== -1;
+}
+
+// Ambil data user yang sedang login (atau null)
+function ambilUserLogin() {
+    try {
+        return JSON.parse(sessionStorage.getItem("userLogin") || localStorage.getItem("userLogin"));
+    } catch (e) {
+        return null;
+    }
+}
+
+// Penjaga halaman admin: belum login -> ke login, bukan admin -> ke Dashboard
+function cekAdmin() {
+    var user = ambilUserLogin();
+    if (!user) {
+        alert("Silakan login terlebih dahulu.");
+        window.location.href = "index.html";
+        return null;
+    }
+    if (!adalahAdmin(user)) {
+        alert("Halaman ini hanya tersedia untuk akun yang memiliki akses SITTA.");
+        window.location.href = "Dashboard.html";
+        return null;
+    }
+    return user;
+}
+
+// Khusus admin: menu Stok & Tracking biasa dihapus, diganti "Stok SITTA" & "Tracking SITTA"
+function tambahMenuAdmin() {
+    if (!adalahAdmin(ambilUserLogin())) return;
+
+    // Admin tidak memakai menu Stok & Tracking biasa: hapus dari navbar dan dropdown
+    ["Stok.html", "Tracking.html"].forEach(function (href) {
+        document.querySelectorAll('.navbar .links a[href="' + href + '"], .dropdown-menu a[href="' + href + '"]').forEach(function (a) {
+            var li = a.closest("li");
+            if (li) li.remove();
+        });
+    });
+
+    var menu = [
+        ["StokAdmin.html", "Stok SITTA"],
+        ["TrackingAdmin.html", "Tracking SITTA"]
+    ];
+    var halaman = window.location.pathname.split("/").pop().toLowerCase();
+    var daftarLink = document.querySelector(".navbar .links");
+    var daftarDropdown = document.querySelector(".dropdown-menu ul");
+
+    menu.forEach(function (m) {
+        [daftarLink, daftarDropdown].forEach(function (wadah) {
+            if (!wadah || wadah.querySelector('a[href="' + m[0] + '"]')) return;
+
+            var li = document.createElement("li");
+            if (halaman === m[0].toLowerCase()) li.className = "active";
+
+            var a = document.createElement("a");
+            a.href = m[0];
+            a.textContent = m[1];
+            li.appendChild(a);
+
+            // Disisipkan sebelum "Contact Us" supaya Contact Us tetap di ujung kanan
+            var contact = wadah.querySelector('a[href="ContactUs.html"], a[href="#ContactUs"]');
+            var liContact = contact ? contact.closest("li") : null;
+            if (liContact) {
+                wadah.insertBefore(li, liContact);
+            } else if (wadah === daftarDropdown) {
+                wadah.insertBefore(li, wadah.lastElementChild);   // sebelum tombol MyUT
+            } else {
+                wadah.appendChild(li);
+            }
+        });
+    });
+}
+/* >>>>>>>>>> AKHIR BAGIAN 0: AKSES ADMIN SITTA <<<<<<<<<< */
+
+
+/* #####################################################################
+   #####################################################################
+   BAGIAN 1: INTI SITUS (Login, Menu, Dashboard, Stok, Tracking)
+   Sumber: Gabungan.js
+   Halaman: index, Dashboard, Stok, Tracking
+   #####################################################################
+   ##################################################################### */
+
 /* =====================================================================
    GABUNGAN.JS
    Gabungan dari: script.js, Stok.js, Tracking.js, dan <script> di Dashboard.html
@@ -62,12 +201,27 @@ function initLogin() {
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
 
-        const user = dataPengguna.find(u => u.email === email);
+        // Cari di akun bawaan (data.js) dan akun baru (data2.js)
+        let user = (typeof cariPengguna === "function")
+            ? cariPengguna(email)
+            : dataPengguna.find(u => u.email === email);
+
+        // Akun Admin SITTA (BAGIAN 0)
+        if (!user) user = AKUN_ADMIN.find(u => u.email === email);
 
         if (user && user.password === password) {
-            sessionStorage.setItem("userLogin", JSON.stringify(user));
-            alert("Selamat datang " + user.nama + " di PBA UT Medan");
-            window.location.href = "dashboard.html";
+            // Jangan menyimpan kata sandi di sesi/perangkat.
+            var userAman = { id: user.id, nama: user.nama, email: user.email, role: user.role, lokasi: user.lokasi };
+            var dataLogin = JSON.stringify(userAman);
+            sessionStorage.setItem("userLogin", dataLogin);
+            if (document.getElementById("ingatLogin") && document.getElementById("ingatLogin").checked) {
+                localStorage.setItem("userLogin", dataLogin);
+                localStorage.setItem("emailLoginTersimpan", user.email);
+            } else {
+                localStorage.removeItem("userLogin");
+                localStorage.removeItem("emailLoginTersimpan");
+            }
+            tampilPopupLogin("Selamat datang, " + user.nama + "!", "Anda berhasil masuk ke Portal Bahan Ajar UT Medan.", function () { window.location.href = "Dashboard.html"; });
         } else if (user) {
             alert("Aduhhh, maaf " + user.nama + ", kata sandi anda yang masukkan salahh.... coba ulangi");
             document.getElementById("password").value = "";
@@ -123,7 +277,7 @@ function initMenuDropdown() {
    Mengembalikan data user yang login, atau null (lalu diarahkan ke login)
    ===================================================================== */
 function cekLogin() {
-    const user = JSON.parse(sessionStorage.getItem('userLogin'));
+    const user = ambilUserLogin();
     if (!user) {
         alert('Silakan login terlebih dahulu.');
         window.location.href = 'index.html';
@@ -307,6 +461,142 @@ function initTracking() {
 
 
 /* =====================================================================
+   FITUR TAMBAHAN: popup login, tema, logout, ingat akun di perangkat
+   ===================================================================== */
+function tampilPopupLogin(judul, pesan, setelahTutup) {
+    var lama = document.getElementById("popupLoginCantik");
+    if (lama) lama.remove();
+    var modal = document.createElement("div");
+    modal.id = "popupLoginCantik";
+    modal.className = "popup-login-overlay";
+    modal.innerHTML = '<section class="popup-login-card" role="dialog" aria-modal="true" aria-labelledby="popupLoginJudul"><div class="popup-login-icon"><i class="ri-shield-check-line"></i></div><h2 id="popupLoginJudul"></h2><p class="popup-login-pesan"></p><button type="button" class="popup-login-ok">Lanjutkan <i class="ri-arrow-right-line"></i></button></section>';
+    modal.querySelector("h2").textContent = judul;
+    modal.querySelector(".popup-login-pesan").textContent = pesan;
+    document.body.appendChild(modal);
+    requestAnimationFrame(function(){ modal.classList.add("aktif"); });
+    modal.querySelector("button").addEventListener("click", function(){ modal.remove(); if (setelahTutup) setelahTutup(); });
+}
+/* Ganti tema dengan efek: lingkaran melebar dari tombol tema (View Transitions API).
+   Browser yang belum mendukung memakai transisi warna halus sebagai cadangan. */
+function gantiTemaDenganEfek(tujuan, x, y, setelah) {
+    var html = document.documentElement;
+    function terapkan() {
+        html.setAttribute("data-tema", tujuan);
+        try { localStorage.setItem("temaPBA", tujuan); } catch (e) {}
+        if (setelah) setelah();
+    }
+
+    var kurangiGerak = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (kurangiGerak) { terapkan(); return; }
+
+    if (document.startViewTransition) {
+        var radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+        var transisi = document.startViewTransition(terapkan);
+        transisi.ready.then(function () {
+            html.animate(
+                { clipPath: ["circle(0px at " + x + "px " + y + "px)", "circle(" + radius + "px at " + x + "px " + y + "px)"] },
+                { duration: 750, easing: "cubic-bezier(.4, 0, .2, 1)", pseudoElement: "::view-transition-new(root)" }
+            );
+        }).catch(function () {});
+    } else {
+        html.classList.add("transisi-tema");
+        terapkan();
+        setTimeout(function () { html.classList.remove("transisi-tema"); }, 700);
+    }
+}
+
+function initFiturAkunTema() {
+    var tersimpan = localStorage.getItem("temaPBA") || "terang";
+    document.documentElement.setAttribute("data-tema", tersimpan);
+
+    // ----- Tombol Log out: bulat, hanya ikon (hanya di halaman yang punya header) -----
+    function buatTombolLogout() {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "btn-logout-pba";
+        b.title = "Log out";
+        b.setAttribute("aria-label", "Log out");
+        b.innerHTML = '<i class="ri-logout-box-r-line"></i>';
+        return b;
+    }
+
+    // Navbar: MyUT + Log out dikelompokkan di pinggir kanan
+    var navbar = document.querySelector("header .navbar");
+    if (navbar && !navbar.querySelector(".aksi-kanan")) {
+        var kelompok = document.createElement("div");
+        kelompok.className = "aksi-kanan";
+        var myut = navbar.querySelector(".action-btn");
+        if (myut) {
+            navbar.insertBefore(kelompok, myut);
+            kelompok.appendChild(myut);
+        } else {
+            navbar.appendChild(kelompok);
+        }
+        kelompok.appendChild(buatTombolLogout());
+    }
+
+    // Dropdown (layar kecil): tombol Log out bulat di bawah menu
+    var dropdown = document.querySelector("header .dropdown-menu");
+    if (dropdown && !dropdown.querySelector(".kontrol-akun-pba")) {
+        var wrap = document.createElement("div");
+        wrap.className = "kontrol-akun-pba";
+        wrap.appendChild(buatTombolLogout());
+        dropdown.appendChild(wrap);
+    }
+
+    // ----- Tombol Tema: bulat melayang di pojok kanan bawah (bukan di navbar) -----
+    if (!document.querySelector(".btn-tema-float")) {
+        var tema = document.createElement("button");
+        tema.type = "button";
+        tema.className = "btn-tema-float";
+        tema.title = "Ganti tema";
+        tema.setAttribute("aria-label", "Ganti tema");
+        tema.innerHTML = '<i class="' + (tersimpan === "gelap" ? "ri-sun-line" : "ri-moon-line") + '"></i>';
+        document.body.appendChild(tema);
+
+        tema.addEventListener("click", function () {
+            var tujuan = document.documentElement.getAttribute("data-tema") === "gelap" ? "terang" : "gelap";
+            var kotak = tema.getBoundingClientRect();
+            gantiTemaDenganEfek(tujuan, kotak.left + kotak.width / 2, kotak.top + kotak.height / 2, function () {
+                tema.querySelector("i").className = tujuan === "gelap" ? "ri-sun-line" : "ri-moon-line";
+            });
+            tema.classList.remove("berputar");
+            void tema.offsetWidth;            // restart animasi ikon
+            tema.classList.add("berputar");
+        });
+    }
+
+    // ----- Log out (dengan konfirmasi) -----
+    document.querySelectorAll(".btn-logout-pba").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            tampilPopupLogin("Keluar dari akun?", "Sesi Anda akan diakhiri. Informasi akun tersimpan hanya di perangkat ini jika fitur ingat akun dipilih.", function () {
+                sessionStorage.removeItem("userLogin");
+                localStorage.removeItem("userLogin");
+                localStorage.removeItem("emailLoginTersimpan");
+                window.location.href = "index.html";
+            });
+            var card = document.querySelector("#popupLoginCantik .popup-login-card");
+            if (card && !card.querySelector(".popup-login-batal")) {
+                var batal = document.createElement("button");
+                batal.className = "popup-login-batal";
+                batal.type = "button";
+                batal.textContent = "Batal";
+                batal.onclick = function () { document.getElementById("popupLoginCantik").remove(); };
+                card.insertBefore(batal, card.querySelector(".popup-login-ok"));
+            }
+        });
+    });
+}
+function initIngatLogin() {
+    var email = document.getElementById("email"), form = document.getElementById("formLogin");
+    if (!email || !form || document.getElementById("ingatLogin")) return;
+    var label = document.createElement("label"); label.className="ingat-login-pba";
+    label.innerHTML='<input type="checkbox" id="ingatLogin"> <span><strong>Ingat saya di perangkat ini</strong><small>Simpan sesi dan email, bukan kata sandi.</small></span>';
+    var submit = form.querySelector('[type="submit"]'); if (submit) form.insertBefore(label, submit);
+    var saved = localStorage.getItem("emailLoginTersimpan"); if(saved){email.value=saved; document.getElementById("ingatLogin").checked=!!localStorage.getItem("userLogin");}
+}
+
+/* =====================================================================
    7. PEMICU HALAMAN
    Menjalankan bagian yang sesuai dengan elemen yang ada di halaman
    ===================================================================== */
@@ -314,7 +604,12 @@ function initTracking() {
     // Halaman login (index.html)
     if (document.getElementById('formLogin')) {
         initLogin();
+        initIngatLogin();
     }
+    initFiturAkunTema();
+
+    // Menu khusus Admin SITTA (hanya muncul untuk admin)
+    tambahMenuAdmin();
 
     // Menu dropdown (Dashboard, Stok, Tracking)
     initMenuDropdown();
@@ -323,8 +618,9 @@ function initTracking() {
     const adaDashboard = document.getElementById('namaUser');
     const adaStok = document.getElementById('daftarBMP');
     const adaTracking = document.getElementById('hasilTracking');
+    const adaContact = document.getElementById('halamanContact');
 
-    if (adaDashboard || adaStok || adaTracking) {
+    if (adaDashboard || adaStok || adaTracking || adaContact) {
         const user = cekLogin();
         if (!user) return;
 
@@ -333,3 +629,787 @@ function initTracking() {
         if (adaTracking) initTracking();
     }
 })();
+/* >>>>>>>>>> AKHIR BAGIAN 1: INTI SITUS <<<<<<<<<< */
+
+
+/* #####################################################################
+   #####################################################################
+   BAGIAN 2: BUAT AKUN
+   Sumber: daftar.js
+   Halaman: index.html (butuh data.js + data2.js). Akun baru ditulis ke data2.js
+   #####################################################################
+   ##################################################################### */
+
+/* =====================================================================
+   DAFTAR.JS - Logika halaman Buat Akun
+   Membutuhkan: data.js dan data2.js (dimuat lebih dulu di Daftar.html)
+   ===================================================================== */
+(function () {
+    var form = document.getElementById("formDaftar");
+    if (!form) return;
+
+    var modal = document.getElementById("modalDaftar");   // ada di index.html (pop-up)
+    var pemicu = document.getElementById("bukaDaftar");
+    var halamanLogin = !!document.getElementById("formLogin");
+
+    // ----- Pop-up: buka / tutup -----
+    function bukaModal() {
+        if (!modal) return;
+        modal.classList.add("tampil");
+        document.body.classList.add("modal-terbuka");
+        var f = document.getElementById("regNama");
+        if (f) setTimeout(function () { f.focus(); }, 150);
+    }
+
+    function tutupModal() {
+        if (!modal) return;
+        modal.classList.remove("tampil");
+        document.body.classList.remove("modal-terbuka");
+    }
+
+    if (modal) {
+        if (pemicu) pemicu.addEventListener("click", function (e) { e.preventDefault(); bukaModal(); });
+        document.querySelectorAll("[data-tutup-daftar]").forEach(function (el) {
+            el.addEventListener("click", function (e) { e.preventDefault(); tutupModal(); });
+        });
+        modal.addEventListener("click", function (e) { if (e.target === modal) tutupModal(); });
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape" && modal.classList.contains("tampil")) tutupModal();
+        });
+        // Daftar.html lama dialihkan ke index.html#daftar
+        if (location.hash === "#daftar") bukaModal();
+    }
+
+    // Efek label floating & tampil/sembunyi password sudah dipasang oleh
+    // initLogin() di halaman index. Dipasang di sini hanya bila berdiri sendiri.
+    if (!halamanLogin) {
+        form.querySelectorAll(".input").forEach(function (input) {
+            input.addEventListener("focus", function () { this.parentNode.classList.add("focus"); });
+            input.addEventListener("blur", function () {
+                if (this.value === "") this.parentNode.classList.remove("focus");
+            });
+        });
+        form.querySelectorAll(".toggle-password").forEach(function (icon) {
+            icon.addEventListener("click", function () {
+                var input = icon.parentNode.querySelector(".input");
+                var tersembunyi = input.type === "password";
+                input.type = tersembunyi ? "text" : "password";
+                icon.classList.toggle("ri-eye-line", tersembunyi);
+                icon.classList.toggle("ri-eye-off-line", !tersembunyi);
+            });
+        });
+    }
+
+    // ----- Helper pesan error -----
+    function tampilError(idInput, idPesan, pesan) {
+        var kotak = document.getElementById(idInput).parentNode;
+        document.getElementById(idPesan).textContent = pesan;
+        kotak.classList.toggle("salah", pesan !== "");
+        return pesan === "";
+    }
+
+    function validasi() {
+        var nama = document.getElementById("regNama").value.trim();
+        var email = document.getElementById("regEmail").value.trim();
+        var pass = document.getElementById("regPassword").value;
+        var konf = document.getElementById("regKonfirmasi").value;
+        var lokasi = document.getElementById("regLokasi").value.trim();
+
+        var polaEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        var semuaOk = true;
+
+        semuaOk = tampilError("regNama", "errRegNama",
+            nama.length < 3 ? "Nama minimal 3 karakter." : "") && semuaOk;
+
+        var pesanEmail = "";
+        if (!polaEmail.test(email)) pesanEmail = "Format email tidak valid.";
+        else if (emailSudahTerdaftar(email)) pesanEmail = "Email sudah terdaftar.";
+        semuaOk = tampilError("regEmail", "errRegEmail", pesanEmail) && semuaOk;
+
+        semuaOk = tampilError("regPassword", "errRegPassword",
+            pass.length < 6 ? "Password minimal 6 karakter." : "") && semuaOk;
+
+        semuaOk = tampilError("regKonfirmasi", "errRegKonfirmasi",
+            konf !== pass ? "Password tidak sama." : "") && semuaOk;
+
+        semuaOk = tampilError("regLokasi", "errRegLokasi",
+            lokasi === "" ? "Lokasi wajib diisi." : "") && semuaOk;
+
+        return semuaOk;
+    }
+
+    // ----- Kirim form -----
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (!validasi()) return;
+
+        var peran = document.getElementById("regRole").value;
+        var hasil = simpanAkunBaru({
+            nama: document.getElementById("regNama").value,
+            email: document.getElementById("regEmail").value,
+            password: document.getElementById("regPassword").value,
+            role: adalahAdmin({ role: peran }) ? "Mahasiswa" : peran,
+            lokasi: document.getElementById("regLokasi").value
+        });
+
+        if (!hasil.ok) {
+            tampilError("regEmail", "errRegEmail", hasil.pesan);
+            return;
+        }
+
+        // Simpan akun baru ke file data2.js (lihat data2.js untuk cara kerjanya)
+        var prosesSimpan = simpanDataPenggunaKeFile();
+
+        // Kembali ke form login (tetap di halaman yang sama) dengan email terisi
+        form.reset();
+        form.querySelectorAll(".input-box").forEach(function (k) {
+            k.classList.remove("salah");
+            if (!k.classList.contains("pilih")) k.classList.remove("focus");
+        });
+        form.querySelectorAll(".pesan-error").forEach(function (p) { p.textContent = ""; });
+        tutupModal();
+
+        var emailLogin = document.getElementById("email");
+        var passLogin = document.getElementById("password");
+        if (halamanLogin && emailLogin) {
+            emailLogin.value = hasil.akun.email;
+            emailLogin.parentNode.classList.add("focus");
+            if (passLogin) passLogin.focus();
+        }
+        var info = document.getElementById("infoDaftarBerhasil");
+        if (info) {
+            info.textContent = "Akun untuk " + hasil.akun.nama + " berhasil dibuat. Silakan masuk.";
+            info.classList.add("tampil");
+            setTimeout(function () { info.classList.remove("tampil"); }, 6000);
+        } else {
+            alert("Akun untuk " + hasil.akun.nama + " berhasil dibuat. Silakan masuk.");
+        }
+
+        // Kabari hasil penyimpanan ke data2.js
+        prosesSimpan.then(function (status) {
+            var tambahan = {
+                file:  " Tersimpan di data2.js.",
+                unduh: " File data2.js terbaru diunduh - timpa file data2.js di folder Javascript.",
+                gagal: " (Belum tersimpan ke file data2.js, hanya di browser ini.)"
+            }[status] || "";
+            if (info) {
+                info.textContent += tambahan;
+                info.classList.add("tampil");
+                setTimeout(function () { info.classList.remove("tampil"); }, 7000);
+            } else if (tambahan) {
+                alert(tambahan.trim());
+            }
+        });
+    });
+})();
+/* >>>>>>>>>> AKHIR BAGIAN 2: BUAT AKUN <<<<<<<<<< */
+
+/* #####################################################################
+   #####################################################################
+   BAGIAN 3: STOK SITTA (Vue.js) - KHUSUS ADMIN
+   Sumber: stok-app.js + soal Tugas 2
+   Halaman: StokAdmin.html (#stokApp), data: dataBahanAjar.js
+   #####################################################################
+   ##################################################################### */
+
+document.addEventListener("DOMContentLoaded", function () {
+    // Hanya jalan di StokAdmin.html
+    if (!document.getElementById("stokApp")) return;
+    // Hanya untuk Admin SITTA
+    if (!cekAdmin()) return;
+    if (typeof Vue === "undefined") {
+        alert("Vue.js gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.");
+        return;
+    }
+
+    var KUNCI_STOK = "stokSITTA";
+
+    function salin(obj) {
+        return JSON.parse(JSON.stringify(obj));
+    }
+
+    // Fitur catatan sudah dihapus: field catatan/catatanHTML dibuang dari data lama.
+    // peringatan: "" (otomatis ikut stok) | "aman" | "menipis" | "kosong"
+    function rapikan(item) {
+        if (item.peringatan === undefined) item.peringatan = "";
+        delete item.catatanHTML;
+        delete item.catatan;
+        return item;
+    }
+
+    // Data awal: dari localStorage bila pernah diubah, kalau tidak dari dataBahanAjar.js
+    function muatStok() {
+        try {
+            var tersimpan = JSON.parse(localStorage.getItem(KUNCI_STOK));
+            if (Array.isArray(tersimpan)) return tersimpan.map(rapikan);
+        } catch (e) {}
+        return salin(stok).map(rapikan);
+    }
+
+    function formKosong() {
+        return { kode: "", judul: "", kategori: "", upbjj: "", lokasiRak: "", harga: "", qty: 0, safety: 0, peringatan: "" };
+    }
+
+    new Vue({
+        el: "#stokApp",
+
+        // ------------------------------------------------------------
+        // DATA
+        // ------------------------------------------------------------
+        data: {
+            upbjjList: upbjjList,
+            kategoriList: kategoriList,
+            stok: muatStok(),
+
+            // pilihan peringatan (warna) pada kolom Peringatan
+            opsiPeringatan: [
+                { kunci: "", label: "Otomatis (ikut stok)", ikon: "ri-magic-line" },
+                { kunci: "aman", label: "Aman", ikon: "ri-checkbox-circle-fill" },
+                { kunci: "menipis", label: "Stok menipis", ikon: "ri-error-warning-fill" },
+                { kunci: "kosong", label: "Habis stok", ikon: "ri-close-circle-fill" }
+            ],
+            infoPeringatan: {
+                aman: { label: "Aman", ikon: "ri-checkbox-circle-fill" },
+                menipis: { label: "Stok menipis", ikon: "ri-error-warning-fill" },
+                kosong: { label: "Habis stok", ikon: "ri-close-circle-fill" }
+            },
+
+            // filter & sort
+            selectedUpbjj: "",
+            selectedKategori: "",
+            filterReorder: false,
+            sortBy: "",
+            sortDir: "asc",
+
+            // form tambah / edit (modal)
+            modalTampil: false,
+            modalMode: "tambah",
+            itemEdit: null,
+            form: formKosong(),
+            errors: {},
+
+            // notifikasi
+            pesan: "",
+            pesanTimer: null,
+            terakhirDiubah: ""
+        },
+
+        // ------------------------------------------------------------
+        // COMPUTED (di-cache: tidak dihitung ulang kalau data tidak berubah)
+        // ------------------------------------------------------------
+        computed: {
+            // Dependent options: kategori hanya yang ada di UT-Daerah terpilih
+            kategoriTersedia: function () {
+                var self = this;
+                if (!self.selectedUpbjj) return [];
+                return self.kategoriList.filter(function (k) {
+                    return self.stok.some(function (i) {
+                        return i.upbjj === self.selectedUpbjj && i.kategori === k;
+                    });
+                });
+            },
+
+            stokTerfilter: function () {
+                var self = this;
+                var hasil = self.stok.filter(function (i) {
+                    if (self.selectedUpbjj && i.upbjj !== self.selectedUpbjj) return false;
+                    if (self.selectedKategori && i.kategori !== self.selectedKategori) return false;
+                    if (self.filterReorder && !(i.qty < i.safety || i.qty === 0)) return false;
+                    return true;
+                });
+
+                if (self.sortBy) {
+                    var arah = self.sortDir === "asc" ? 1 : -1;
+                    var kunci = self.sortBy;
+                    hasil.sort(function (a, b) {
+                        if (kunci === "judul") return arah * a.judul.localeCompare(b.judul, "id");
+                        return arah * (a[kunci] - b[kunci]);
+                    });
+                }
+                return hasil;
+            },
+
+            ringkasan: function () {
+                var r = { total: 0, aman: 0, menipis: 0, kosong: 0 };
+                var self = this;
+                self.stokTerfilter.forEach(function (i) {
+                    r.total++;
+                    r[self.statusStok(i)]++;
+                });
+                return r;
+            },
+
+            // Jumlah seluruh bahan ajar yang perlu re-order (tidak terpengaruh filter)
+            jumlahReorder: function () {
+                return this.stok.filter(function (i) {
+                    return i.qty < i.safety || i.qty === 0;
+                }).length;
+            },
+
+            // Pratinjau peringatan di form (mengikuti pilihan, atau stok yang sedang diketik)
+            kunciPratinjau: function () {
+                var f = this.form;
+                return f.peringatan || this.statusStok({ qty: Number(f.qty) || 0, safety: Number(f.safety) || 0 });
+            },
+
+            adaFilterAktif: function () {
+                return !!(this.selectedUpbjj || this.selectedKategori || this.filterReorder || this.sortBy);
+            }
+        },
+
+        // ------------------------------------------------------------
+        // METHODS
+        // ------------------------------------------------------------
+        methods: {
+            // aman: qty >= safety | menipis: qty < safety | kosong: qty = 0
+            statusStok: function (item) {
+                if (item.qty === 0) return "kosong";
+                if (item.qty < item.safety) return "menipis";
+                return "aman";
+            },
+
+            // Peringatan yang tampil di kolom Peringatan: pilihan admin, atau otomatis ikut stok
+            kunciPeringatan: function (item) {
+                return item.peringatan || this.statusStok(item);
+            },
+
+            rupiah: function (n) {
+                return "Rp " + Number(n).toLocaleString("id-ID");
+            },
+
+            toggleArah: function () {
+                this.sortDir = this.sortDir === "asc" ? "desc" : "asc";
+            },
+
+            resetFilter: function () {
+                this.selectedUpbjj = "";
+                this.selectedKategori = "";
+                this.filterReorder = false;
+                this.sortBy = "";
+                this.sortDir = "asc";
+            },
+
+            tampilPesan: function (teks) {
+                var self = this;
+                self.pesan = teks;
+                clearTimeout(self.pesanTimer);
+                self.pesanTimer = setTimeout(function () { self.pesan = ""; }, 3500);
+            },
+
+            // ----- modal tambah / edit -----
+            bukaTambah: function () {
+                this.modalMode = "tambah";
+                this.itemEdit = null;
+                this.form = formKosong();
+                this.errors = {};
+                this.modalTampil = true;
+            },
+
+            bukaEdit: function (item) {
+                this.modalMode = "edit";
+                this.itemEdit = item;
+                this.form = salin(item);
+                this.errors = {};
+                this.modalTampil = true;
+            },
+
+            tutupModal: function () {
+                this.modalTampil = false;
+            },
+
+            // ----- validasi sederhana tiap field -----
+            validasi: function () {
+                var f = this.form;
+                var e = {};
+                var kode = String(f.kode).trim().toUpperCase();
+
+                if (!kode) {
+                    e.kode = "Kode wajib diisi.";
+                } else if (!/^[A-Z]{4}\d{4}$/.test(kode)) {
+                    e.kode = "Format kode: 4 huruf + 4 angka (contoh: EKMA4116).";
+                } else if (this.modalMode === "tambah" && this.stok.some(function (i) {
+                    return i.kode === kode && i.upbjj === f.upbjj;
+                })) {
+                    e.kode = "Kode ini sudah ada di UT-Daerah tersebut.";
+                }
+
+                if (String(f.judul).trim().length < 3) e.judul = "Judul minimal 3 karakter.";
+                if (this.kategoriList.indexOf(f.kategori) === -1) e.kategori = "Pilih kategori.";
+                if (this.upbjjList.indexOf(f.upbjj) === -1) e.upbjj = "Pilih UT-Daerah.";
+                if (String(f.lokasiRak).trim().length < 2) e.lokasiRak = "Lokasi rak wajib diisi.";
+                if (!(Number(f.harga) > 0)) e.harga = "Harga harus lebih dari 0.";
+                if (f.qty === "" || !Number.isInteger(Number(f.qty)) || Number(f.qty) < 0) e.qty = "Stok harus bilangan bulat, minimal 0.";
+                if (f.safety === "" || !Number.isInteger(Number(f.safety)) || Number(f.safety) < 0) e.safety = "Safety stock harus bilangan bulat, minimal 0.";
+
+                this.errors = e;
+                return Object.keys(e).length === 0;
+            },
+
+            simpan: function () {
+                if (!this.validasi()) return;
+
+                var f = this.form;
+                var data = {
+                    kode: String(f.kode).trim().toUpperCase(),
+                    judul: String(f.judul).trim(),
+                    kategori: f.kategori,
+                    upbjj: f.upbjj,
+                    lokasiRak: String(f.lokasiRak).trim(),
+                    harga: Number(f.harga),
+                    qty: Number(f.qty),
+                    safety: Number(f.safety),
+                    peringatan: f.peringatan
+                };
+
+                if (this.modalMode === "tambah") {
+                    this.stok.push(data);
+                    // Jika data baru tidak terlihat karena filter aktif, reset filter
+                    if (this.stokTerfilter.indexOf(data) === -1) this.resetFilter();
+                    this.tampilPesan("Bahan ajar " + data.kode + " berhasil ditambahkan.");
+                } else {
+                    Object.assign(this.itemEdit, data);
+                    this.tampilPesan("Data " + data.kode + " berhasil diperbarui.");
+                }
+                this.tutupModal();
+            },
+
+            pulihkanData: function () {
+                if (!confirm("Kembalikan semua data stok ke data awal? Perubahan yang sudah dibuat akan hilang.")) return;
+                this.stok = salin(window.stok).map(rapikan);
+                this.resetFilter();
+                this.tampilPesan("Data stok dikembalikan ke data awal.");
+            }
+        },
+
+        // ------------------------------------------------------------
+        // WATCHERS
+        // ------------------------------------------------------------
+        watch: {
+            // 1) Ganti UT-Daerah -> pilihan kategori lama tidak berlaku lagi
+            selectedUpbjj: function () {
+                this.selectedKategori = "";
+            },
+
+            // 2) Data stok berubah (tambah / edit) -> simpan otomatis + catat waktu
+            stok: {
+                deep: true,
+                handler: function (baru) {
+                    try { localStorage.setItem(KUNCI_STOK, JSON.stringify(baru)); } catch (e) {}
+                    this.terakhirDiubah = new Date().toLocaleTimeString("id-ID");
+                }
+            },
+
+            // 3) Kode otomatis huruf besar tanpa spasi saat diketik
+            "form.kode": function (v) {
+                var rapi = String(v).toUpperCase().replace(/\s+/g, "");
+                if (rapi !== v) this.form.kode = rapi;
+            }
+        },
+
+        mounted: function () {
+            var self = this;
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape") self.tutupModal();
+            });
+        }
+    });
+});
+/* >>>>>>>>>> AKHIR BAGIAN 3: STOK SITTA <<<<<<<<<< */
+
+
+/* #####################################################################
+   #####################################################################
+   BAGIAN 4: TRACKING SITTA (Vue.js) - KHUSUS ADMIN
+   Sumber: tracking-app.js + soal Tugas 2
+   Halaman: TrackingAdmin.html (#trackingApp), data: dataBahanAjar.js
+   #####################################################################
+   ##################################################################### */
+
+document.addEventListener("DOMContentLoaded", function () {
+    // Hanya jalan di TrackingAdmin.html
+    if (!document.getElementById("trackingApp")) return;
+    // Hanya untuk Admin SITTA
+    if (!cekAdmin()) return;
+    if (typeof Vue === "undefined") {
+        alert("Vue.js gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.");
+        return;
+    }
+
+    var KUNCI_DO = "trackingSITTA";
+    var BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
+    function salin(obj) {
+        return JSON.parse(JSON.stringify(obj));
+    }
+
+    function pad(n) {
+        return String(n).padStart(2, "0");
+    }
+
+    // Waktu lokal (bukan UTC) supaya tanggal tidak bergeser
+    function tglLokal(d) {
+        return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+    }
+
+    function jamLokal(d) {
+        return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+    }
+
+    function muatTracking() {
+        try {
+            var tersimpan = JSON.parse(localStorage.getItem(KUNCI_DO));
+            if (tersimpan && typeof tersimpan === "object" && !Array.isArray(tersimpan)) return tersimpan;
+        } catch (e) {}
+        return salin(tracking);
+    }
+
+    function formKosong() {
+        return { nim: "", nama: "", ekspedisi: ekspedisiList[0].kode, paketKode: "", tanggalKirim: tglLokal(new Date()) };
+    }
+
+    new Vue({
+        el: "#trackingApp",
+
+        // ------------------------------------------------------------
+        // DATA
+        // ------------------------------------------------------------
+        data: {
+            paketList: paket,
+            ekspedisiList: ekspedisiList,
+            trackingData: muatTracking(),
+
+            // pencarian
+            kodeCari: "",
+            kodeHasil: "",
+            sudahCari: false,
+
+            // form DO baru (modal)
+            modalTampil: false,
+            formDO: formKosong(),
+            errors: {},
+
+            pesan: "",
+            pesanTimer: null
+        },
+
+        // ------------------------------------------------------------
+        // COMPUTED
+        // ------------------------------------------------------------
+        computed: {
+            daftarNomorDO: function () {
+                return Object.keys(this.trackingData);
+            },
+
+            // DO + tahun berjalan + nomor urut tahun itu. Contoh: DO2025-001, DO2025-002, ...
+            nomorDOBerikutnya: function () {
+                var tahun = new Date().getFullYear();
+                var maks = 0;
+                this.daftarNomorDO.forEach(function (n) {
+                    var m = /^DO(\d{4})-(\d+)$/.exec(n);
+                    if (m && Number(m[1]) === tahun) maks = Math.max(maks, Number(m[2]));
+                });
+                return "DO" + tahun + "-" + pad(maks + 1).padStart(3, "0");
+            },
+
+            detail: function () {
+                return this.kodeHasil ? this.trackingData[this.kodeHasil] : null;
+            },
+
+            // Paket pada hasil pencarian (data lama menyimpan kode paket)
+            paketDetail: function () {
+                if (!this.detail) return null;
+                var p = this.detail.paket;
+                return this.paketList.find(function (x) { return x.kode === p || x.nama === p; }) || null;
+            },
+
+            // Posisi terbaru di paling atas
+            perjalananTerbaru: function () {
+                return this.detail ? this.detail.perjalanan.slice().reverse() : [];
+            },
+
+            paketTerpilih: function () {
+                var kode = this.formDO.paketKode;
+                return this.paketList.find(function (p) { return p.kode === kode; }) || null;
+            },
+
+            totalHarga: function () {
+                return this.paketTerpilih ? this.paketTerpilih.harga : 0;
+            }
+        },
+
+        // ------------------------------------------------------------
+        // METHODS
+        // ------------------------------------------------------------
+        methods: {
+            rupiah: function (n) {
+                return "Rp " + Number(n).toLocaleString("id-ID");
+            },
+
+            // "2025-08-25 10:12:20" -> "25 Agu 2025, 10:12:20"
+            formatWaktu: function (teks) {
+                var bagian = String(teks).split(" ");
+                var tgl = bagian[0].split("-");
+                if (tgl.length !== 3) return teks;
+                var jam = bagian[1] ? ", " + bagian[1] : "";
+                return parseInt(tgl[2], 10) + " " + BULAN[parseInt(tgl[1], 10) - 1] + " " + tgl[0] + jam;
+            },
+
+            lacak: function () {
+                var kode = this.kodeCari.trim().toUpperCase();
+                this.sudahCari = true;
+                this.kodeHasil = this.trackingData[kode] ? kode : "";
+            },
+
+            lacakDari: function (nomor) {
+                this.kodeCari = nomor;
+                this.lacak();
+            },
+
+            tampilPesan: function (teks) {
+                var self = this;
+                self.pesan = teks;
+                clearTimeout(self.pesanTimer);
+                self.pesanTimer = setTimeout(function () { self.pesan = ""; }, 3500);
+            },
+
+            // ----- modal DO baru -----
+            bukaModal: function () {
+                this.formDO = formKosong();
+                this.errors = {};
+                this.modalTampil = true;
+            },
+
+            tutupModal: function () {
+                this.modalTampil = false;
+            },
+
+            isiHariIni: function () {
+                this.formDO.tanggalKirim = tglLokal(new Date());
+            },
+
+            validasi: function () {
+                var f = this.formDO;
+                var e = {};
+
+                if (!/^\d{8,12}$/.test(f.nim)) e.nim = "NIM harus berupa angka, 8-12 digit.";
+                if (String(f.nama).trim().length < 3) e.nama = "Nama minimal 3 karakter.";
+                if (!this.ekspedisiList.some(function (x) { return x.kode === f.ekspedisi; })) e.ekspedisi = "Pilih ekspedisi.";
+                if (!this.paketTerpilih) e.paketKode = "Pilih paket bahan ajar.";
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(f.tanggalKirim)) e.tanggalKirim = "Tanggal kirim wajib diisi.";
+
+                this.errors = e;
+                return Object.keys(e).length === 0;
+            },
+
+            simpanDO: function () {
+                if (!this.validasi()) return;
+
+                var f = this.formDO;
+                var nomor = this.nomorDOBerikutnya;
+                var paketDipilih = this.paketTerpilih;
+                var ekspedisi = this.ekspedisiList.find(function (x) { return x.kode === f.ekspedisi; });
+                var jam = jamLokal(new Date());
+
+                var entri = {
+                    nomorDO: nomor,
+                    nim: f.nim,
+                    nama: String(f.nama).trim(),
+                    status: "Diproses di Gudang UT",
+                    ekspedisi: ekspedisi.nama,
+                    tanggalKirim: f.tanggalKirim,
+                    paket: paketDipilih.kode,
+                    total: paketDipilih.harga,
+                    perjalanan: [
+                        {
+                            waktu: f.tanggalKirim + " " + jam,
+                            keterangan: "DO dibuat. Paket " + paketDipilih.nama + " sedang disiapkan di gudang UT."
+                        }
+                    ]
+                };
+
+                // $set agar properti baru ikut reaktif (Vue 2)
+                this.$set(this.trackingData, nomor, entri);
+
+                this.tutupModal();
+                this.lacakDari(nomor);
+                this.tampilPesan("Delivery Order " + nomor + " berhasil dibuat.");
+            },
+
+            pulihkanData: function () {
+                if (!confirm("Kembalikan semua data DO ke data awal? DO yang sudah dibuat akan hilang.")) return;
+                this.trackingData = salin(window.tracking);
+                this.kodeCari = "";
+                this.tampilPesan("Data DO dikembalikan ke data awal.");
+            }
+        },
+
+        // ------------------------------------------------------------
+        // WATCHERS
+        // ------------------------------------------------------------
+        watch: {
+            // 1) Kolom pencarian dikosongkan -> hasil dibersihkan
+            kodeCari: function (v) {
+                if (v.trim() === "") {
+                    this.kodeHasil = "";
+                    this.sudahCari = false;
+                }
+            },
+
+            // 2) Data DO berubah -> simpan otomatis
+            trackingData: {
+                deep: true,
+                handler: function (baru) {
+                    try { localStorage.setItem(KUNCI_DO, JSON.stringify(baru)); } catch (e) {}
+                }
+            },
+
+            // 3) NIM hanya boleh angka
+            "formDO.nim": function (v) {
+                var angka = String(v).replace(/\D/g, "");
+                if (angka !== v) this.formDO.nim = angka;
+            },
+
+            // 4) Paket dipilih -> hapus pesan error paket
+            "formDO.paketKode": function () {
+                if (this.errors.paketKode) this.$delete(this.errors, "paketKode");
+            }
+        },
+
+        mounted: function () {
+            var self = this;
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape") self.tutupModal();
+            });
+        }
+    });
+});
+/* >>>>>>>>>> AKHIR BAGIAN 4: TRACKING SITTA <<<<<<<<<< */
+
+/* =====================================================================
+   BAGIAN 5: LATAR ANIMASI (bola bergerak + logo UT 3D)
+   Disuntik otomatis ke semua halaman yang punya <header>.
+   Foto mahasiswa tidak disentuh (tetap diam, diatur di CSS).
+   ===================================================================== */
+document.addEventListener("DOMContentLoaded", function () {
+    if (!document.querySelector("header") || document.querySelector(".latar-animasi")) return;
+
+    var lapisan = "";
+    // 14 lapisan -> memberi ketebalan 3D; makin ke belakang makin gelap
+    for (var i = 0; i < 14; i++) {
+        var z = (i - 13) * 2.5;                 // 0 (depan) sampai -32.5px
+        var b = (0.45 + 0.55 * (i / 13)).toFixed(2);
+        lapisan += '<div class="lapis" style="--z:' + z + ';--b:' + b + '"></div>';
+    }
+    lapisan += '<div class="lapis depan" style="--z:0"></div>';
+
+    var el = document.createElement("div");
+    el.className = "latar-animasi";
+    el.setAttribute("aria-hidden", "true");
+    el.innerHTML =
+        '<span class="bola bola-c"></span>' +
+        '<span class="bola bola-d"></span>' +
+        '<span class="bola bola-e"></span>' +
+        '<div class="logo3d-scene"><div class="logo3d">' + lapisan + '</div></div>';
+    document.body.insertBefore(el, document.body.firstChild);
+});
+/* >>>>>>>>>> AKHIR BAGIAN 5: LATAR ANIMASI <<<<<<<<<< */
